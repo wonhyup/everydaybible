@@ -1,0 +1,63 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum Duration {
+  ONE_YEAR
+  NINE_MONTHS
+  SIX_MONTHS
+  THREE_MONTHS
+}
+
+enum Method {
+  OT_FIRST
+  NT_FIRST
+  ALT
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  role      Role     @default(USER)
+  duration  Duration @default(ONE_YEAR)
+  method    Method   @default(OT_FIRST)
+  pushTime  String   @default("08:00")
+  createdAt DateTime @default(now())
+  planStartDate DateTime?
+
+  pushSubscriptions PushSubscription[]
+  readingLogs       ReadingLog[]
+}
+
+model ReadingLog {
+  id         String   @id @default(uuid())
+  userId     String
+  dayNumber  Int      // 몇 일째 읽기인지
+  completedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dayNumber])
+}
+
+model PushSubscription {
+  id       String @id @default(uuid())
+  userId   String
+  endpoint String
+  p256dh   String
+  auth     String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
